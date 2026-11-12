@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>XDumpGO 2.0</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="brand">⚡ XDumpGO <span class="ver">2.0</span><span class="by">Quartz Inc.</span></div>
+  <div class="stats">
+    <span id="st-run" class="pill">idle</span>
+    <span id="st-prog" class="stat"></span>
+    <span id="st-speed" class="stat"></span>
+    <span id="st-counts" class="stat"></span>
+  </div>
+  <button id="btn-stop" class="btn danger" title="Detener job en curso">■ Stop</button>
+</header>
+
+<nav>
+  <button class="tab active" data-tab="dorks">1 · Dorks</button>
+  <button class="tab" data-tab="parse">2 · Parse</button>
+  <button class="tab" data-tab="inject">3 · Inject</button>
+  <button class="tab" data-tab="dump">4 · Dump</button>
+  <button class="tab" data-tab="shell">5 · Shell</button>
+  <button class="tab" data-tab="settings">⚙ Ajustes</button>
+</nav>
+
+<main>
+  <section id="tab-dorks" class="panel active">
+    <div class="grid2">
+      <div class="card">
+        <h3>Generador de dorks</h3>
+        <label>Keywords (una por línea)</label>
+        <textarea id="d-words" rows="7" spellcheck="false">inurl:admin
+inurl:login
+inurl:php?id=
+intitle:"intranet"
+inurl:config ext:php</textarea>
+        <label>Dominioms (uno por línea · vacío = dorks globales)</label>
+        <textarea id="d-domains" rows="4" spellcheck="false">example.com</textarea>
+        <label>Parámetros (separados por espacio, para modo inurl)</label>
+        <input id="d-params" value="id q page s search file p">
+        <div class="row">
+          <label class="chk"><input type="checkbox" id="d-mode-site" checked> site:dom + keyword</label>
+          <label class="chk"><input type="checkbox" id="d-mode-inurl"> site:dom + inurl:param</label>
+        </div>
+        <div class="row">
+          <div class="grow">
+            <label>Máximo de dorks</label>
+            <input id="d-max" type="number" value="300" min="1" max="5000">
+          </div>
+          <button id="btn-dorks" class="btn">⚡ Generar</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Dorks generadas (<span id="d-count">0</span>)</h3>
+        <div class="actions">
+          <button id="btn-copy-dorks" class="btn small">Copiar todas</button>
+          <button id="btn-export-dorks" class="btn small">Exportar .txt</button>
+        </div>
+        <div id="dork-list" class="list"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-parse" class="panel">
+    <div class="grid2">
+      <div class="card">
+        <h3>Parseo de resultados</h3>
+        <p class="hint">Busca en Google/Bing con los dorks y extrae las URLs candidatas.
+        Si Google da captcha/consent, cambia a Bing o usa un proxy (Ajustes).</p>
+        <label>Dorks personalizadas (opcional, una por línea · vacío = usar generadas)</label>
+        <textarea id="p-dorks" rows="4" spellcheck="false"></textarea>
+        <div class="row">
+          <div>
+            <label>Motor</label>
+            <select id="p-engine">
+              <option value="google">Google</option>
+              <option value="bing">Bing</option>
+            </select>
+          </div>
+          <div>
+            <label>Workers</label>
+            <input id="p-workers" type="number" value="8" min="1" max="64">
+          </div>
+          <div>
+            <label>Resultados/dork</label>
+            <input id="p-perdork" type="number" value="10" min="1" max="50">
+          </div>
+        </div>
+        <button id="btn-parse" class="btn">🔎 Iniciar parse</button>
+      </div>
+      <div class="card">
+        <h3>URLs candidatas (<span id="u-count">0</span>)</h3>
+        <div class="actions">
+          <label class="chk"><input type="checkbox" id="u-only-params"> solo con parámetros</label>
+          <button id="btn-copy-urls" class="btn small">Copiar</button>
+          <button id="btn-export-urls" class="btn small">Exportar .txt</button>
+        </div>
+        <div id="url-list" class="list table-wrap"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-inject" class="panel">
+    <div class="grid2">
+      <div class="card">
+        <h3>Inyección de payloads</h3>
+        <p class="hint">Sustituye el valor de cada parámetro por el payload y verifica si se refleja
+        en la respuesta (marcador <code>xqz123</code> = sin falsos positivos).</p>
+        <div class="row">
+          <div>
+            <label>Workers</label>
+            <input id="i-workers" type="number" value="8" min="1" max="64">
+          </div>
+          <div>
+            <label>Máx. URLs</label>
+            <input id="i-maxurls" type="number" value="200" min="1">
+          </div>
+          <div>
+            <label>Máx. parámetros/URL</label>
+            <input id="i-maxparams" type="number" value="3" min="1" max="10">
+          </div>
+        </div>
+        <label>Payloads (uno por línea, se prueban en orden hasta reflejo)</label>
+        <textarea id="i-payloads" rows="3" spellcheck="false">xqz123"><svg/onload=alert(document.domain)></textarea>
+        <button id="btn-inject" class="btn">💉 Inyectar</button>
+      </div>
+      <div class="card">
+        <h3>Reflejos detectados (<span id="inj-count">0</span>)</h3>
+        <div class="actions">
+          <label class="chk"><input type="checkbox" id="inj-only-ref" checked> solo reflejados</label>
+          <button id="btn-export-injects" class="btn small">Exportar .txt</button>
+        </div>
+        <div id="inject-list" class="list"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-dump" class="panel">
+    <div class="grid2">
+      <div class="card">
+        <h3>Dump de páginas</h3>
+        <p class="hint">Descarga cada URL y extrae: título, emails, links, formularios, JS,
+        secretos (AWS/API/tokens/passwords) y comentarios HTML.</p>
+        <div class="row">
+          <div>
+            <label>Workers</label>
+            <input id="dm-workers" type="number" value="8" min="1" max="64">
+          </div>
+          <div>
+            <label>Máx. URLs</label>
+            <input id="dm-maxurls" type="number" value="100" min="1">
+          </div>
+        </div>
+        <label>Dump de una URL específica (ID de la lista, opcional)</label>
+        <input id="dm-id" placeholder="ej. 12" value="">
+        <div class="row">
+          <button id="btn-dump" class="btn">📦 Dump (ID)</button>
+          <button id="btn-dump-all" class="btn">📦 Dump all</button>
+          <button id="btn-export-dumps" class="btn small">Exportar .json</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Resultados del dump (<span id="dump-count">0</span>)</h3>
+        <div id="dump-list" class="list"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-shell" class="panel">
+    <div class="grid2">
+      <div class="card">
+        <h3>Shell local</h3>
+        <label>Comando</label>
+        <input id="sh-cmd" value="dir" spellcheck="false">
+        <label>Argumentos (separados por espacio)</label>
+        <input id="sh-args" value="" spellcheck="false">
+        <label>Directorio (opcional)</label>
+        <input id="sh-cwd" value="" spellcheck="false">
+        <button id="btn-shell" class="btn">▶ Ejecutar</button>
+      </div>
+      <div class="card">
+        <h3>Salidas (<span id="sh-count">0</span>)</h3>
+        <div id="shell-list" class="list"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-settings" class="panel">
+    <div class="grid2">
+      <div class="card">
+        <h3>Ajustes</h3>
+        <p class="hint">Se guardan en <code>xdumpgo2.settings.json</code> junto al ejecutable.
+        Proxy recomendado: <code>http://user:pass@host:port</code>.</p>
+        <label>JSON de ajustes</label>
+        <textarea id="set-json" rows="16" spellcheck="false"></textarea>
+        <div class="row">
+          <button id="btn-save-settings" class="btn">💾 Guardar</button>
+          <button id="btn-load-settings" class="btn small">Recargar</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Log</h3>
+        <div id="log-list" class="list mono"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>
